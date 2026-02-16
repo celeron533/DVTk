@@ -61,7 +61,7 @@ jobs:
         --installPath "C:\Program Files\Microsoft Visual Studio\2026\Enterprise" ^
         --add Microsoft.VisualStudio.Component.VC.14.29.16.11.ATL ^
         --add Microsoft.VisualStudio.Component.VC.14.29.16.11.MFC ^
-        --quiet --norestart
+        --norestart
 
     - name: Verify MFC Headers
       shell: pwsh
