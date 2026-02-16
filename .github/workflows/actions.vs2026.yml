@@ -77,7 +77,7 @@ jobs:
     - name: Setup MSBuild
       uses: microsoft/setup-msbuild@v2
       with:
-        vs-version: '[17.0,18.0)'
+        vs-version: '[18.0,19.0)'
 
     - name: Verify MFC Installation
       shell: pwsh
@@ -105,14 +105,14 @@ jobs:
     - name: Locate Devenv and Manual Registry Fix
       shell: pwsh
       run: |
-        # Search VS2022 via vswhere
-        $vsPath = & "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" -version "[17.0,18.0)" -property installationPath
-        $instanceId = & "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" -version "[17.0,18.0)" -property instanceId
+        # Search VS2026 via vswhere
+        $vsPath = & "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" -version "[18.0,19.0)" -property installationPath
+        $instanceId = & "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" -version "[18.0,19.0)" -property instanceId
         
-        if (-not $vsPath) { throw "Visual Studio 2022 not found!" }
+        if (-not $vsPath) { throw "Visual Studio 2026 not found!" }
         
         # Execute Registry Fix for HRESULT 8000000A 
-        $registryPath = "HKCU:\SOFTWARE\Microsoft\VisualStudio\17.0_$($instanceId)_Config\MSBuild"
+        $registryPath = "HKCU:\SOFTWARE\Microsoft\VisualStudio\18.0_$($instanceId)_Config\MSBuild"
         if (!(Test-Path $registryPath)) {
             New-Item -Path $registryPath -Force | Out-Null
         }
@@ -421,7 +421,7 @@ jobs:
       if: ${{ always() }}
       uses: actions/upload-artifact@v4
       with:
-        name: "${{ github.event.repository.name }}-Package-${{ steps.gitversion.outputs.majorMinorPatch }}.${{ steps.gitversion.outputs.preReleaseNumber }}.vs2022"
+        name: "${{ github.event.repository.name }}-Package-${{ steps.gitversion.outputs.majorMinorPatch }}.${{ steps.gitversion.outputs.preReleaseNumber }}.vs2026"
         path: ./staging
 
   publish-test-results:
