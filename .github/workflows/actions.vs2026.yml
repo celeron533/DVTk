@@ -72,7 +72,7 @@ jobs:
         --installPath "%VS_INSTALL_PATH%" ^
         --add Microsoft.VisualStudio.Component.VC.14.29.16.11.ATL ^
         --add Microsoft.VisualStudio.Component.VC.14.29.16.11.MFC ^
-        --norestart
+        --quiet --norestart
 
     - name: Verify MFC Headers
       shell: pwsh
