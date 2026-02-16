@@ -54,11 +54,22 @@ jobs:
       run: |
         ./DVT/updateCopyright.ps1
 
+    - name: Detect Visual Studio installation path
+      shell: pwsh
+      run: |
+        $vsPath = & "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" -version "[18.0,19.0)" -property installationPath
+        if (-not $vsPath) {
+            Write-Error "Visual Studio 2026 not found!"
+            exit 1
+        }
+        Write-Host "✅ Visual Studio found at: $vsPath"
+        Add-Content -Path $env:GITHUB_ENV -Value "VS_INSTALL_PATH=$vsPath"
+
     - name: Install MFC and ATL (v142 compatibility)
       shell: cmd
       run: |
         "C:\Program Files (x86)\Microsoft Visual Studio\Installer\setup.exe" modify ^
-        --installPath "C:\Program Files\Microsoft Visual Studio\2026\Enterprise" ^
+        --installPath "%VS_INSTALL_PATH%" ^
         --add Microsoft.VisualStudio.Component.VC.14.29.16.11.ATL ^
         --add Microsoft.VisualStudio.Component.VC.14.29.16.11.MFC ^
         --norestart
@@ -66,7 +77,7 @@ jobs:
     - name: Verify MFC Headers
       shell: pwsh
       run: |
-        $header = Get-ChildItem -Path "C:\Program Files\Microsoft Visual Studio\2026\Enterprise\VC\Tools\MSVC" -Recurse -Filter "afx.h" -ErrorAction SilentlyContinue
+        $header = Get-ChildItem -Path "$env:VS_INSTALL_PATH\VC\Tools\MSVC" -Recurse -Filter "afx.h" -ErrorAction SilentlyContinue
         if ($header) {
             Write-Host "✅ afx.h found in: $($header.FullName)"
         } else {
@@ -105,11 +116,10 @@ jobs:
     - name: Locate Devenv and Manual Registry Fix
       shell: pwsh
       run: |
-        # Search VS2026 via vswhere
-        $vsPath = & "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" -version "[18.0,19.0)" -property installationPath
+        # Get instance ID for registry fix
         $instanceId = & "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" -version "[18.0,19.0)" -property instanceId
         
-        if (-not $vsPath) { throw "Visual Studio 2026 not found!" }
+        if (-not $instanceId) { throw "Visual Studio instance ID not found!" }
         
         # Execute Registry Fix for HRESULT 8000000A 
         $registryPath = "HKCU:\SOFTWARE\Microsoft\VisualStudio\18.0_$($instanceId)_Config\MSBuild"
@@ -119,7 +129,7 @@ jobs:
         Set-ItemProperty -Path $registryPath -Name "EnableOutOfProcBuild" -Value 0 -Type DWord
         Write-Host "Registry fix applied to $registryPath"
 
-        $devenv = Join-Path $vsPath "Common7\IDE\devenv.com"
+        $devenv = Join-Path $env:VS_INSTALL_PATH "Common7\IDE\devenv.com"
         Add-Content -Path $env:GITHUB_ENV -Value "DEV_CMD=$devenv"
 
     - name: Setup Visual Studio Installer Projects
@@ -131,7 +141,7 @@ jobs:
       run: |
         New-Item -ItemType Directory -Force -Path ./staging
         # Importeer de VS Developer Environment voor x86
-        & cmd /c "call `"C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvarsall.bat`" x86 -vcvars_ver=14.2 && msbuild Dicom.sln /t:Rebuild /p:Configuration=Release /p:Platform=x86 /m /fl /flp:LogFile=./staging/build-msbuild.log"
+        & cmd /c "call `"$env:VS_INSTALL_PATH\VC\Auxiliary\Build\vcvarsall.bat`" x86 -vcvars_ver=14.29 && msbuild Dicom.sln /t:Rebuild /p:Configuration=Release /p:Platform=x86 /m /fl /flp:LogFile=./staging/build-msbuild.log"
 
     - name: Build setup projects (devenv)
       id: vdproj
