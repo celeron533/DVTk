@@ -33,6 +33,11 @@ Note that the DVTk library and DVTk based applications are **not** for clinical 
 
 5.	Right click on the DICOM solution and click *Build*.
 
+### Generated source files
+
+Some lexer/parser outputs are generated during toolchain runs (for example `*_lexer.cpp`, `*_parser.cpp`, `*_parser.cpp.h`, and `*_lex.cpp`, `*_parse.cpp`, `*_parse.cpp.h`).
+These generated files are intentionally excluded via `.gitignore` and should not be committed.
+
 ### Errors
 
 If you get error regarding *afx.h* (*Cannot open include file 'afx.h': No such file or directory.*), make sure to check Output tab in Visual Studio and locate the error related to afx.h. Make sure the file exists and the path is correct. If the file does not exist, download the correct MSVC version from Microsoft.
