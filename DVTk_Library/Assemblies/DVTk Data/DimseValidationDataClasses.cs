@@ -1769,6 +1769,20 @@ namespace DvtkData.Validation
         /// This Directory Record shall be used to reference a Key Object Selection Document.
         /// </remarks>
         KEY_OBJECT_DOC,
+        PALETTE,
+        IMPLANT,
+        IMPLANT_ASSY,
+        IMPLANT_GROUP,
+        INVENTORY,
+        PLAN,
+        MEASUREMENT,
+        SURFACE,
+        SURFACE_SCAN,
+        TRACT,
+        ASSESSMENT,
+        RADIOTHERAPY,
+        ANNOTATION,
+        WF_PRESENTATION,
         /// <summary>
         /// SPECIAL DIRECTORY RECORDS: Private directory record
         /// </summary>
