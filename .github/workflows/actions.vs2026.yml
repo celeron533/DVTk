@@ -483,14 +483,18 @@ jobs:
             exit 1
         }
 
-        # Determine which token to use
+        $isMainRepo = "${{ github.repository }}" -eq "dvtk-org/DVTk"
         $token = $env:GITHUB_TOKEN
+        $userName = "${{ github.actor }}"
         $sourceUrl = "https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json"
-        
-        # For forks, check if a dedicated PAT secret is available
-        if ("${{ github.repository }}" -ne "dvtk-org/DVTk") {
+        $sourceName = "github-packages"
+        $nugetConfigPath = Join-Path $env:RUNNER_TEMP "github-packages.nuget.config"
+
+        # For forks, a PAT is required because GITHUB_TOKEN cannot publish to packages outside the workflow repository context.
+        if (-not $isMainRepo) {
             if (-not [string]::IsNullOrEmpty($env:FORK_PUBLISHING_PAT)) {
                 $token = $env:FORK_PUBLISHING_PAT
+                $userName = "${{ github.repository_owner }}"
                 Write-Host "Using FORK_PUBLISHING_PAT secret for fork publishing"
             } else {
                 Write-Warning "⚠️ This is a fork and FORK_PUBLISHING_PAT is not set. Publishing will be skipped."
@@ -499,13 +503,33 @@ jobs:
             }
         }
 
+        $configXml = (
+            '<?xml version="1.0" encoding="utf-8"?>',
+            '<configuration>',
+            '  <packageSources>',
+            '    <clear />',
+            "    <add key=\"$sourceName\" value=\"$sourceUrl\" />",
+            '  </packageSources>',
+            '  <packageSourceCredentials>',
+            "    <$sourceName>",
+            "      <add key=\"Username\" value=\"$userName\" />",
+            "      <add key=\"ClearTextPassword\" value=\"$token\" />",
+            "    </$sourceName>",
+            '  </packageSourceCredentials>',
+            '</configuration>'
+        ) -join "`n"
+
+        Set-Content -Path $nugetConfigPath -Value $configXml -Encoding UTF8
+
         foreach ($package in $packages) {
             Write-Host "Publishing $($package.Name) to GitHub Packages"
             nuget push $package.FullName `
-              -Source $sourceUrl `
-              -ApiKey $token `
+              -Source $sourceName `
+              -ConfigFile $nugetConfigPath `
               -NonInteractive
         }
+
+        Remove-Item $nugetConfigPath -Force -ErrorAction SilentlyContinue
 
     - name: Publish build artifacts
       if: ${{ always() }}
