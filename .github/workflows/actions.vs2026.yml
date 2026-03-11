@@ -242,6 +242,7 @@ jobs:
             nuget push $package.FullName `
               -Source $sourceName `
               -ConfigFile $nugetConfigPath `
+              -ApiKey $token `
               -NonInteractive
         }
 
