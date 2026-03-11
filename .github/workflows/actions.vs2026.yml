@@ -184,6 +184,69 @@ jobs:
           -OutputDirectory .\staging `
           -NoPackageAnalysis
 
+    - name: Publish NuGet package to GitHub Packages
+      if: ${{ github.event_name != 'pull_request' }}
+      shell: pwsh
+      env:
+        GITHUB_TOKEN: ${{ github.token }}
+        FORK_PUBLISHING_PAT: ${{ secrets.FORK_PUBLISHING_PAT }}
+      run: |
+        $packages = Get-ChildItem -Path ".\staging" -Filter "*.nupkg" -File |
+          Where-Object { $_.Name -notlike "*.symbols.nupkg" }
+
+        if ($packages.Count -eq 0) {
+            Write-Error "No NuGet packages found in .\staging to publish."
+            exit 1
+        }
+
+        $isMainRepo = "${{ github.repository }}" -eq "dvtk-org/DVTk"
+        $token = $env:GITHUB_TOKEN
+        $userName = "${{ github.actor }}"
+        $sourceUrl = "https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json"
+        $sourceName = "github-packages"
+        $nugetConfigPath = Join-Path $env:RUNNER_TEMP "github-packages.nuget.config"
+
+        # For forks, a PAT is required because GITHUB_TOKEN cannot publish to packages outside the workflow repository context.
+        if (-not $isMainRepo) {
+            if (-not [string]::IsNullOrEmpty($env:FORK_PUBLISHING_PAT)) {
+                $token = $env:FORK_PUBLISHING_PAT
+                $userName = "${{ github.repository_owner }}"
+                Write-Host "Using FORK_PUBLISHING_PAT secret for fork publishing"
+            } else {
+                Write-Warning "⚠️ This is a fork and FORK_PUBLISHING_PAT is not set. Publishing will be skipped."
+                Write-Host "To enable publishing from forks, add a FORK_PUBLISHING_PAT secret to your fork's repository settings."
+                exit 0
+            }
+        }
+
+        $configXml = (
+            '<?xml version="1.0" encoding="utf-8"?>',
+            '<configuration>',
+            '  <packageSources>',
+            '    <clear />',
+          ('    <add key="{0}" value="{1}" />' -f $sourceName, $sourceUrl),
+            '  </packageSources>',
+            '  <packageSourceCredentials>',
+          ('    <{0}>' -f $sourceName),
+          ('      <add key="Username" value="{0}" />' -f $userName),
+          ('      <add key="ClearTextPassword" value="{0}" />' -f $token),
+          ('    </{0}>' -f $sourceName),
+            '  </packageSourceCredentials>',
+            '</configuration>'
+        ) -join "`n"
+
+        Set-Content -Path $nugetConfigPath -Value $configXml -Encoding UTF8
+
+        foreach ($package in $packages) {
+            Write-Host "Publishing $($package.Name) to GitHub Packages"
+            nuget push $package.FullName `
+              -Source $sourceName `
+              -ConfigFile $nugetConfigPath `
+              -NonInteractive
+        }
+
+        Remove-Item $nugetConfigPath -Force -ErrorAction SilentlyContinue
+
     - name: Build setup projects (devenv)
       id: vdproj
       continue-on-error: true
@@ -467,69 +530,6 @@ jobs:
             Write-Error "❌ Some files failed to sign. Check if certificate and password are correct."
             exit 1
         }
-
-    - name: Publish NuGet package to GitHub Packages
-      if: ${{ github.event_name != 'pull_request' }}
-      shell: pwsh
-      env:
-        GITHUB_TOKEN: ${{ github.token }}
-        FORK_PUBLISHING_PAT: ${{ secrets.FORK_PUBLISHING_PAT }}
-      run: |
-        $packages = Get-ChildItem -Path ".\staging" -Filter "*.nupkg" -File |
-          Where-Object { $_.Name -notlike "*.symbols.nupkg" }
-
-        if ($packages.Count -eq 0) {
-            Write-Error "No NuGet packages found in .\staging to publish."
-            exit 1
-        }
-
-        $isMainRepo = "${{ github.repository }}" -eq "dvtk-org/DVTk"
-        $token = $env:GITHUB_TOKEN
-        $userName = "${{ github.actor }}"
-        $sourceUrl = "https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json"
-        $sourceName = "github-packages"
-        $nugetConfigPath = Join-Path $env:RUNNER_TEMP "github-packages.nuget.config"
-
-        # For forks, a PAT is required because GITHUB_TOKEN cannot publish to packages outside the workflow repository context.
-        if (-not $isMainRepo) {
-            if (-not [string]::IsNullOrEmpty($env:FORK_PUBLISHING_PAT)) {
-                $token = $env:FORK_PUBLISHING_PAT
-                $userName = "${{ github.repository_owner }}"
-                Write-Host "Using FORK_PUBLISHING_PAT secret for fork publishing"
-            } else {
-                Write-Warning "⚠️ This is a fork and FORK_PUBLISHING_PAT is not set. Publishing will be skipped."
-                Write-Host "To enable publishing from forks, add a FORK_PUBLISHING_PAT secret to your fork's repository settings."
-                exit 0
-            }
-        }
-
-        $configXml = (
-            '<?xml version="1.0" encoding="utf-8"?>',
-            '<configuration>',
-            '  <packageSources>',
-            '    <clear />',
-          ('    <add key="{0}" value="{1}" />' -f $sourceName, $sourceUrl),
-            '  </packageSources>',
-            '  <packageSourceCredentials>',
-          ('    <{0}>' -f $sourceName),
-          ('      <add key="Username" value="{0}" />' -f $userName),
-          ('      <add key="ClearTextPassword" value="{0}" />' -f $token),
-          ('    </{0}>' -f $sourceName),
-            '  </packageSourceCredentials>',
-            '</configuration>'
-        ) -join "`n"
-
-        Set-Content -Path $nugetConfigPath -Value $configXml -Encoding UTF8
-
-        foreach ($package in $packages) {
-            Write-Host "Publishing $($package.Name) to GitHub Packages"
-            nuget push $package.FullName `
-              -Source $sourceName `
-              -ConfigFile $nugetConfigPath `
-              -NonInteractive
-        }
-
-        Remove-Item $nugetConfigPath -Force -ErrorAction SilentlyContinue
 
     - name: Publish build artifacts
       if: ${{ always() }}
