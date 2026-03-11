@@ -17,6 +17,9 @@ env:
 jobs:
   build:
     runs-on: windows-2025-vs2026
+    permissions:
+      contents: read
+      packages: write
 
     steps:
     - name: Checkout source code
@@ -142,6 +145,44 @@ jobs:
         New-Item -ItemType Directory -Force -Path ./staging
         # Importeer de VS Developer Environment voor x86
         & cmd /c "call `"$env:VS_INSTALL_PATH\VC\Auxiliary\Build\vcvarsall.bat`" x86 -vcvars_ver=14.29 && msbuild Dicom.sln /t:Rebuild /p:Configuration=Release /p:Platform=x86 /m /fl /flp:LogFile=./staging/build-msbuild.log"
+
+    - name: Build NuGet package
+      shell: pwsh
+      run: |
+        $packageVersion = "${{ steps.gitversion.outputs.nuGetVersionV2 }}"
+
+        if ([string]::IsNullOrWhiteSpace($packageVersion)) {
+            $packageVersion = "${{ steps.gitversion.outputs.majorMinorPatch }}"
+        }
+
+        $requiredFiles = @(
+          ".\bin\Release\DVTK.dll",
+          ".\bin\Release\DvtkApplicationLayer.dll",
+          ".\bin\Release\DvtkCommonDataFormat.dll",
+          ".\bin\Release\DvtkComparator.dll",
+            ".\bin\Release\DvtkHighLevelInterface.dll",
+          ".\bin\Release\DvtkData.dll",
+          ".\bin\Release\DvtkDefinitionQueryLibrary.dll",
+          ".\bin\Release\DvtkDicomEmulators.dll",
+          ".\bin\Release\DvtkDicomUnicodeConversion.dll",
+          ".\bin\Release\DvtkHl7.dll",
+          ".\bin\Release\DvtkIheActors.dll",
+          ".\bin\Release\DvtkInformationEntity.dll",
+          ".\bin\Release\DVTKManagedCodeAdapter.dll",
+          ".\bin\Release\DvtkScriptSupport.dll"
+        )
+
+        foreach ($file in $requiredFiles) {
+            if (-not (Test-Path $file)) {
+                Write-Error "Required file for NuGet package not found: $file"
+                exit 1
+            }
+        }
+
+        nuget pack .\DvtkHighLevelInterface.nuspec `
+          -Version $packageVersion `
+          -OutputDirectory .\staging `
+          -NoPackageAnalysis
 
     - name: Build setup projects (devenv)
       id: vdproj
@@ -425,6 +466,30 @@ jobs:
         if ($failedCount -gt 0) {
             Write-Error "❌ Some files failed to sign. Check if certificate and password are correct."
             exit 1
+        }
+
+    - name: Publish NuGet package to GitHub Packages
+      if: ${{ github.event_name != 'pull_request' }}
+      shell: pwsh
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        $packages = Get-ChildItem -Path ".\staging" -Filter "*.nupkg" -File |
+          Where-Object { $_.Name -notlike "*.symbols.nupkg" }
+
+        if ($packages.Count -eq 0) {
+            Write-Error "No NuGet packages found in .\staging to publish."
+            exit 1
+        }
+
+        $sourceUrl = "https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json"
+
+        foreach ($package in $packages) {
+            Write-Host "Publishing $($package.Name) to GitHub Packages"
+            nuget push $package.FullName `
+              -Source $sourceUrl `
+              -ApiKey $env:GITHUB_TOKEN `
+              -NonInteractive
         }
 
     - name: Publish build artifacts

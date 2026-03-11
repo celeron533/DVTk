@@ -54,3 +54,21 @@ Set-ItemProperty -Path $registryPath -Name "EnableOutOfProcBuild" -Value 0 -Type
 
 The setup projects can only be built after all other projects have been successfully compiled.
 
+## NuGet package
+
+The GitHub Actions workflow builds a NuGet package for `DvtkHighLevelInterface` and publishes it to GitHub Packages for the `dvtk-org` owner.
+
+Feed URL:
+
+```text
+https://nuget.pkg.github.com/dvtk-org/index.json
+```
+
+Example consumer configuration is available in [NuGet.config.example](NuGet.config.example). The GitHub Packages feed requires authentication with a GitHub username and a Personal Access Token that has permission to read packages.
+
+After adding the feed, install the package by ID:
+
+```powershell
+nuget install DvtkHighLevelInterface -Source https://nuget.pkg.github.com/dvtk-org/index.json
+```
+

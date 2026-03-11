@@ -1,0 +1,29 @@
+<?xml version="1.0"?>
+<package>
+  <metadata>
+    <id>DvtkHighLevelInterface</id>
+    <version>1.0.0</version>
+    <authors>DVTK Community</authors>
+    <description>DVTK High Level Interface for DICOM</description>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <frameworkAssemblies>
+      <frameworkAssembly assemblyName="System" targetFramework=".NETFramework4.8" />
+    </frameworkAssemblies>
+  </metadata>
+  <files>
+    <file src="./bin/Release/DVTK.dll" target="lib\net48" />
+    <file src="./bin/Release/DvtkApplicationLayer.dll" target="lib\net48" />
+    <file src="./bin/Release/DvtkCommonDataFormat.dll" target="lib\net48" />
+    <file src="./bin/Release/DvtkComparator.dll" target="lib\net48" />
+    <file src="./bin/Release/DvtkHighLevelInterface.dll" target="lib\net48" />
+    <file src="./bin/Release/DvtkData.dll" target="lib\net48" />
+    <file src="./bin/Release/DvtkDefinitionQueryLibrary.dll" target="lib\net48" />
+    <file src="./bin/Release/DvtkDicomEmulators.dll" target="lib\net48" />
+    <file src="./bin/Release/DvtkDicomUnicodeConversion.dll" target="lib\net48" />
+    <file src="./bin/Release/DvtkHl7.dll" target="lib\net48" />
+    <file src="./bin/Release/DvtkIheActors.dll" target="lib\net48" />
+    <file src="./bin/Release/DvtkInformationEntity.dll" target="lib\net48" />
+    <file src="./bin/Release/DVTKManagedCodeAdapter.dll" target="lib\net48" />
+    <file src="./bin/Release/DvtkScriptSupport.dll" target="lib\net48" />
+  </files>
+</package>
