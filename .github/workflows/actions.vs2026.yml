@@ -485,7 +485,7 @@ jobs:
 
         # Determine which token to use
         $token = $env:GITHUB_TOKEN
-        $sourceUrl = "https://nuget.pkg.github.com/dvtk-org/index.json"
+        $sourceUrl = "https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json"
         
         # For forks, check if a dedicated PAT secret is available
         if ("${{ github.repository }}" -ne "dvtk-org/DVTk") {
