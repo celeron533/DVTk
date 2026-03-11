@@ -472,7 +472,8 @@ jobs:
       if: ${{ github.event_name != 'pull_request' }}
       shell: pwsh
       env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GITHUB_TOKEN: ${{ github.token }}
+        FORK_PUBLISHING_PAT: ${{ secrets.FORK_PUBLISHING_PAT }}
       run: |
         $packages = Get-ChildItem -Path ".\staging" -Filter "*.nupkg" -File |
           Where-Object { $_.Name -notlike "*.symbols.nupkg" }
@@ -482,13 +483,27 @@ jobs:
             exit 1
         }
 
-        $sourceUrl = "https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json"
+        # Determine which token to use
+        $token = $env:GITHUB_TOKEN
+        $sourceUrl = "https://nuget.pkg.github.com/dvtk-org/index.json"
+        
+        # For forks, check if a dedicated PAT secret is available
+        if ("${{ github.repository }}" -ne "dvtk-org/DVTk") {
+            if (-not [string]::IsNullOrEmpty($env:FORK_PUBLISHING_PAT)) {
+                $token = $env:FORK_PUBLISHING_PAT
+                Write-Host "Using FORK_PUBLISHING_PAT secret for fork publishing"
+            } else {
+                Write-Warning "⚠️ This is a fork and FORK_PUBLISHING_PAT is not set. Publishing will be skipped."
+                Write-Host "To enable publishing from forks, add a FORK_PUBLISHING_PAT secret to your fork's repository settings."
+                exit 0
+            }
+        }
 
         foreach ($package in $packages) {
             Write-Host "Publishing $($package.Name) to GitHub Packages"
             nuget push $package.FullName `
               -Source $sourceUrl `
-              -ApiKey $env:GITHUB_TOKEN `
+              -ApiKey $token `
               -NonInteractive
         }
 
