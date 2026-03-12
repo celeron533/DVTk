@@ -160,7 +160,7 @@ jobs:
           ".\bin\Release\DvtkApplicationLayer.dll",
           ".\bin\Release\DvtkCommonDataFormat.dll",
           ".\bin\Release\DvtkComparator.dll",
-            ".\bin\Release\DvtkHighLevelInterface.dll",
+          ".\bin\Release\DvtkHighLevelInterface.dll",
           ".\bin\Release\DvtkData.dll",
           ".\bin\Release\DvtkDefinitionQueryLibrary.dll",
           ".\bin\Release\DvtkDicomEmulators.dll",
