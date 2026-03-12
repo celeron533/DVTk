@@ -23,6 +23,7 @@ Note that the DVTk library and DVTk based applications are **not** for clinical 
 
         i.	Development tools for .NET
         ii.	.NET Framework 4.8 development tools
+        iii.	.NET Framework 3.5 SP1 (required to build DVTk Script Support)
 
 2.	If you want to add or update the setup files of the installers, then in Visual Studio install Visual Studio extension: Microsoft Visual Studio Installer Projects 2022. The installers are created in the build pipeline.
 
