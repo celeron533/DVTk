@@ -33,6 +33,11 @@ Note that the DVTk library and DVTk based applications are **not** for clinical 
 
 5.	Right click on the DICOM solution and click *Build*.
 
+### Generated source files
+
+Some lexer/parser outputs are generated during toolchain runs (for example `*_lexer.cpp`, `*_parser.cpp`, `*_parser.cpp.h`, and `*_lex.cpp`, `*_parse.cpp`, `*_parse.cpp.h`).
+These generated files are intentionally excluded via `.gitignore` and should not be committed.
+
 ### Errors
 
 If you get error regarding *afx.h* (*Cannot open include file 'afx.h': No such file or directory.*), make sure to check Output tab in Visual Studio and locate the error related to afx.h. Make sure the file exists and the path is correct. If the file does not exist, download the correct MSVC version from Microsoft.
@@ -48,4 +53,22 @@ Set-ItemProperty -Path $registryPath -Name "EnableOutOfProcBuild" -Value 0 -Type
 ```
 
 The setup projects can only be built after all other projects have been successfully compiled.
+
+## NuGet package
+
+The GitHub Actions workflow builds a NuGet package for `DvtkHighLevelInterface` and publishes it to GitHub Packages for the `dvtk-org` owner.
+
+Feed URL:
+
+```text
+https://nuget.pkg.github.com/dvtk-org/index.json
+```
+
+Example consumer configuration is available in [NuGet.config.example](NuGet.config.example). The GitHub Packages feed requires authentication with a GitHub username and a Personal Access Token that has permission to read packages.
+
+After adding the feed, install the package by ID:
+
+```powershell
+nuget install DvtkHighLevelInterface -Source https://nuget.pkg.github.com/dvtk-org/index.json
+```
 

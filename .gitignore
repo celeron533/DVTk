@@ -398,3 +398,11 @@ FodyWeavers.xsd
 *.sln.iml
 .vscode/
 .editorconfig
+
+# Auto-generated lexer/parser outputs
+**/*_lex.cpp
+**/*_parse.cpp
+**/*_parse.cpp.h
+**/*_lexer.cpp
+**/*_parser.cpp
+**/*_parser.cpp.h
